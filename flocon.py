@@ -178,8 +178,8 @@ class Request:
         url = string.Template(_FILE_SERVER).safe_substitute({
             'ip': client.ip, 'port': client.port, 'filename': self.filename,
         })
-        request.redirect(url)
-        request.finish()
+        self.request.redirect(url)
+        self.request.finish()
         _REQUEST = None
 
     def redirect_fallback_mirror(self):
