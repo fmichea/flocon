@@ -119,7 +119,7 @@ class MulticastClientManager(DatagramProtocol):
         if _msg == _HAS_MSG:
             self.has_file(client, _filename)
             return
-        if _REQUEST.filename != _filename:
+        if _REQUEST is None or _REQUEST.filename != _filename:
             return
         if _msg == _YES_MSG and _REQUEST is not None:
             _REQUEST.redirect_file_server(_id)
