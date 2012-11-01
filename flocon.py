@@ -144,9 +144,9 @@ class MulticastClientManager(DatagramProtocol):
     def has_file(self, client, filename):
         packages = []
         for _, _, files in os.walk(_ROOT_PKG_CACHE):
-            for filename in files:
-                if filename.endswith('.tar.xz'):
-                    packages.append(filename)
+            for _filename in files:
+                if _filename.endswith('.tar.xz'):
+                    packages.append(_filename)
         if filename in packages:
             self.send_with_filename(_YES_MSG, filename, client.addr)
         else:
@@ -166,6 +166,7 @@ class Request:
         else:
             self.clients = _MULTICAST_OBJ.ask_file(self.filename)
         reactor.callLater(1, self.redirect_fallback_mirror)
+
     def __str__(self):
         return self.request.uri
 
