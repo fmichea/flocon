@@ -56,7 +56,7 @@ def _find_fallback_mirror():
                     return None
     return None
 
-_FALLBACK_MIRROR = _find_fallback_mirror() + '/$filename'
+_FALLBACK_MIRROR = str(_find_fallback_mirror()) + '/$filename'
 _FILE_SERVER = 'http://$ip:$port/$filename'
 
 
@@ -225,7 +225,7 @@ def main(args):
     else:
         logging.basicConfig(level=logging.INFO, format=_LOGGING_FORMAT)
 
-    if _FALLBACK_MIRROR is None:
+    if _FALLBACK_MIRROR.startswith('None'):
         logging.error('Fallback mirror was not found in your configuration.')
         sys.exit()
 
