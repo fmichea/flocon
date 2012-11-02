@@ -4,8 +4,8 @@ import hashlib
 import logging
 import os
 import random
-import sys
 import string
+import sys
 import time
 
 from twisted.internet import reactor
@@ -133,23 +133,28 @@ class MulticastClientManager(DatagramProtocol):
         self.send_data(_SEPARATOR_F.join([msg, filename]), addr)
 
     def announce_presence(self):
+        logging.debug('Sending presence to multicast group.')
         self.send_data(_PING_MSG, _MULTICAST_ADDR)
         reactor.callLater(_REANNOUNCE_TIMER, self.announce_presence)
 
     def ask_file(self, filename):
         for _, client in _CLIENTS.iteritems():
+            logging.debug('Sending request for file to %s.', client)
             self.send_with_filename(_HAS_MSG, filename, client.addr)
         return len(_CLIENTS)
 
     def has_file(self, client, filename):
+        logging.info('Client %s asks if I have %s.', client, filename)
         packages = []
         for _, _, files in os.walk(_ROOT_PKG_CACHE):
             for _filename in files:
                 if _filename.endswith('.tar.xz'):
                     packages.append(_filename)
         if filename in packages:
+            logging.info('I have it!')
             self.send_with_filename(_YES_MSG, filename, client.addr)
         else:
+            logging.info('It is not in my cache...')
             self.send_with_filename(_NO_MSG, filename, client.addr)
 
 _MULTICAST_OBJ = MulticastClientManager()
@@ -160,7 +165,6 @@ class Request:
         _, self.repo, _, self.arch, self.filename = self.request.uri.split('/')
 
     def init_response(self):
-        logging.debug('Recieved GET request for %s', self.request.uri)
         if not _CLIENTS:
             self.redirect_fallback_mirror()
         else:
@@ -175,9 +179,12 @@ class Request:
         if _REQUEST is None or _REQUEST.filename != self.filename:
             return
         client = _CLIENTS[id]
+        logging.info('Redirecting to client %s for packet %s.', client,
+                     self.filename)
         url = string.Template(_FILE_SERVER).safe_substitute({
             'ip': client.ip, 'port': client.port, 'filename': self.filename,
         })
+        logging.debug('Redirect URL: %s', url)
         self.request.redirect(url)
         self.request.finish()
         _REQUEST = None
@@ -186,10 +193,10 @@ class Request:
         global _REQUEST
         if _REQUEST is None or _REQUEST.filename != self.filename:
             return
+        logging.info('Redirecting to fallback mirror.')
         url = string.Template(_FALLBACK_MIRROR).safe_substitute({
             'repo': self.repo, 'arch': self.arch, 'filename': self.filename,
         })
-        logging.debug('Redirecting to fallback mirror.')
         logging.debug('Redirect URL: %s', url)
         self.request.redirect(url)
         self.request.finish()
@@ -197,6 +204,8 @@ class Request:
 
     def client_answered_no(self):
         self.clients -= 1
+        logging.debug('One of the clients answered no. Still %d clients '
+                      'remaining.', self.clients)
         if self.clients == 0:
             self.redirect_fallback_mirror()
 
@@ -206,6 +215,7 @@ class LocalHttpServer(resource.Resource):
 
     def render_GET(self, request):
         global _REQUEST
+        logging.debug('Recieved GET request for %s', self.request.uri)
         _REQUEST = Request(request)
         _REQUEST.init_response()
         return server.NOT_DONE_YET
