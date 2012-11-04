@@ -215,7 +215,7 @@ class LocalHttpServer(resource.Resource):
 
     def render_GET(self, request):
         global _REQUEST
-        logging.debug('Recieved GET request for %s', self.request.uri)
+        logging.debug('Recieved GET request for %s', request.uri)
         _REQUEST = Request(request)
         _REQUEST.init_response()
         return server.NOT_DONE_YET
