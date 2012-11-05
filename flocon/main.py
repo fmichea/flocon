@@ -229,7 +229,8 @@ def timeout_clients():
         del _CLIENTS[_id]
     reactor.callLater(_REANNOUNCE_TIMER, timeout_clients)
 
-def main(args):
+def main():
+    args = sys.argv[1:]
     if '-d' in args or '--debug' in args:
         logging.basicConfig(level=logging.DEBUG, format=_LOGGING_FORMAT_DEBUG)
     else:
@@ -262,4 +263,4 @@ def main(args):
     reactor.run()
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()
