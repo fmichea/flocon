@@ -1,4 +1,6 @@
-#! /usr/bin/env python
+# main.py - Everything is in there.
+# Author: Franck Michea < franck.michea@gmail.com >
+# License: New BSD License (See LICENSE)
 
 import hashlib
 import logging

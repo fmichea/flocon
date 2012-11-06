@@ -1,12 +1,12 @@
 # Maintainer: Franck Michea <franck.michea@gmail.com>
 # Maintainer: Yannick LM <yannicklm1337@gmail.com>
 pkgname=flocon-git
-pkgver=20121105
+pkgver=20121106
 pkgrel=1
 pkgdesc=""
-arch=('i686' 'x86_64')
-url=""
-license=()
+arch=('any')
+url="http://bitbucket.org/kushou/flocon"
+license=('BSD')
 groups=()
 depends=('python2' 'twisted')
 makedepends=()
@@ -41,5 +41,10 @@ build() {
 package() {
     cd "$_gitname"
 
+    # Python package
     python2 setup.py install --root=$pkgdir/ --optimize=1
+
+    # License
+    mkdir -p $pkgdir/usr/share/licenses/$pkgname/
+    install LICENSE $pkgdir/usr/share/licenses/$pkgname/LICENSE
 }
