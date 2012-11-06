@@ -47,4 +47,8 @@ package() {
     # License
     mkdir -p $pkgdir/usr/share/licenses/$pkgname/
     install LICENSE $pkgdir/usr/share/licenses/$pkgname/LICENSE
+
+    # Systemd unit file.
+    mkdir -p $pkgdir/usr/lib/systemd/system/
+    install lib/flocon-git.service $pkgdir/usr/lib/systemd/system/flocon-git.service
 }
