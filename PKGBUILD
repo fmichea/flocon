@@ -1,7 +1,7 @@
 # Maintainer: Franck Michea <franck.michea@gmail.com>
 # Maintainer: Yannick LM <yannicklm1337@gmail.com>
 pkgname=flocon-git
-pkgver=20121106
+pkgver=20121107
 pkgrel=1
 pkgdesc=""
 arch=('any')
@@ -16,7 +16,7 @@ conflicts=()
 replaces=()
 backup=()
 options=()
-install=
+install=$pkgname.install
 changelog=
 source=()
 noextract=()
