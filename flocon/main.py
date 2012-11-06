@@ -195,13 +195,20 @@ class Request:
         global _REQUEST
         if _REQUEST is None or _REQUEST.filename != self.filename:
             return
-        logging.info('Redirecting to fallback mirror.')
-        url = string.Template(_FALLBACK_MIRROR).safe_substitute({
-            'repo': self.repo, 'arch': self.arch, 'filename': self.filename,
-        })
-        logging.debug('Redirect URL: %s', url)
-        self.request.redirect(url)
-        self.request.finish()
+        if _FALLBACK_MIRROR.startswith('None'):
+            # No fallback mirror is set in configuration, so we just return an
+            # error.
+            logging.info('No fallback mirror: 404 Not Found.')
+            self.request.setResponseCode(404)
+            self.request.finish()
+        else:
+            logging.info('Redirecting to fallback mirror.')
+            url = string.Template(_FALLBACK_MIRROR).safe_substitute({
+                'repo': self.repo, 'arch': self.arch, 'filename': self.filename,
+            })
+            logging.debug('Redirect URL: %s', url)
+            self.request.redirect(url)
+            self.request.finish()
         _REQUEST = None
 
     def client_answered_no(self):
@@ -237,10 +244,6 @@ def main():
         logging.basicConfig(level=logging.DEBUG, format=_LOGGING_FORMAT_DEBUG)
     else:
         logging.basicConfig(level=logging.INFO, format=_LOGGING_FORMAT)
-
-    if _FALLBACK_MIRROR.startswith('None'):
-        logging.error('Fallback mirror was not found in your configuration.')
-        sys.exit()
 
     # Displaying some information about us.
     logging.info('Id: %s', _ID)
