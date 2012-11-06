@@ -1,4 +1,5 @@
 # Maintainer: Franck Michea <franck.michea@gmail.com>
+# Maintainer: Yannick LM <yannicklm1337@gmail.com>
 pkgname=flocon-git
 pkgver=20121105
 pkgrel=1
@@ -19,7 +20,7 @@ install=
 changelog=
 source=()
 noextract=()
-md5sums=() #generate with 'makepkg -g'
+md5sums=()
 
 _gitroot='https://bitbucket.org/kushou/flocon.git'
 _gitname='flocon'
@@ -40,5 +41,5 @@ build() {
 package() {
     cd "$_gitname"
 
-    python2 setup.py install
+    python2 setup.py install --root=$pkgdir/ --optimize=1
 }
