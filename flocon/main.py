@@ -38,6 +38,7 @@ _ID = hashlib.sha1('{name}_{random_value}'.format(
     random_value = int(random.random() * 100000000),
 )).hexdigest()
 
+_DISCONNECT_MSG = 'flocon: DISCONNECT'
 _HAS_MSG = 'flocon: HAS'
 _NO_MSG = 'flocon: NO'
 _PING_MSG = 'flocon: PING'
@@ -73,7 +74,7 @@ _FILE_SERVER = 'http://$ip:$port/$filename'
 
 class Client:
     def __init__(self, id, addr):
-        self.id, self.last, self.addr = id, None, addr
+        self.id, self.last, self.addr, self.connected = id, None, addr, True
         self.ip, self.port = addr
         self.update()
 
@@ -89,7 +90,7 @@ class Client:
         self.last = time.time()
 
     def is_valid(self):
-        return (time.time() - self.last) < _TIMEOUT
+        return self.connected and (time.time() - self.last) < _TIMEOUT
 
 _REQUEST = None
 
@@ -117,6 +118,10 @@ class MulticastClientManager(DatagramProtocol):
                 _CLIENTS[_id] = c
                 if _msg == _PING_MSG:
                     self.send_data(_PONG_MSG, addr)
+            return
+        elif _msg == _DISCONNECT_MSG:
+            client.connected = False
+            timeout_clients()
             return
 
         # From here, if we don't know the client, we just ignore the message.
@@ -150,6 +155,9 @@ class MulticastClientManager(DatagramProtocol):
         logging.debug('Sending presence to multicast group.')
         self.send_data(_PING_MSG, _MULTICAST_ADDR)
         reactor.callLater(_REANNOUNCE_TIMER, self.announce_presence)
+
+    def announce_disconnection(self):
+        self.send_data(_DISCONNECT_MSG, _MULTICAST_ADDR)
 
     def ask_file(self, filename):
         for _, client in _CLIENTS.iteritems():
@@ -248,6 +256,12 @@ def timeout_clients():
         del _CLIENTS[_id]
     reactor.callLater(_REANNOUNCE_TIMER, timeout_clients)
 
+
+def disconnect_multicast():
+    # Send disconnect message to everyone.
+    _MULTICAST_OBJ.announce_disconnection()
+
+
 def main():
     if _DEBUG:
         logging.basicConfig(level=logging.DEBUG, format=_LOGGING_FORMAT_DEBUG)
@@ -277,7 +291,11 @@ def main():
     # Timeout clients when not reannouncing.
     timeout_clients()
 
+    # End of the program.
+    reactor.addSystemEventTrigger('before', 'shutdown', disconnect_multicast)
+
     reactor.run()
+
 
 if __name__ == '__main__':
     main()
