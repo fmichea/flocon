@@ -6,6 +6,7 @@ import hashlib
 import logging
 import os
 import random
+import signal
 import string
 import sys
 import time
@@ -48,6 +49,13 @@ _SEPARATOR_F = ' = '
 
 _CLIENTS = dict()
 
+def _list_clients(signum, stack_frame):
+    c_len = len(_CLIENTS)
+    logging.info('\nThere %s %s client%s connected.',
+                 'are' if c_len > 1 else 'is', c_len, 's' if c_len > 1 else '')
+    for client in _CLIENTS.values():
+        logging.info(' - %s', client)
+    logging.info('')
 
 def _find_fallback_mirror():
     with open('/etc/pacman.d/mirrorlist') as f:
@@ -245,6 +253,9 @@ def main():
         logging.basicConfig(level=logging.DEBUG, format=_LOGGING_FORMAT_DEBUG)
     else:
         logging.basicConfig(level=logging.INFO, format=_LOGGING_FORMAT)
+
+    # Hook on SIGUSR1
+    signal.signal(signal.SIGUSR1, _list_clients)
 
     # Displaying some information about us.
     logging.info('Id: %s', _ID)
