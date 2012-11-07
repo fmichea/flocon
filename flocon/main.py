@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import signal
+import socket
 import string
 import sys
 import time
@@ -149,7 +150,10 @@ class MulticastClientManager(DatagramProtocol):
             _REQUEST.client_answered_no()
 
     def send_data(self, msg, addr):
-        self.transport.write(_SEPARATOR.join([_ID, msg]), addr)
+        try:
+            self.transport.write(_SEPARATOR.join([_ID, msg]), addr)
+        except socket.error:
+            pass
 
     def send_with_filename(self, msg, filename, addr):
         self.send_data(_SEPARATOR_F.join([msg, filename]), addr)
