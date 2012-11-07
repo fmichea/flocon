@@ -14,9 +14,10 @@ from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.web import resource, server, static
 
-_LOGGING_FORMAT = '%(message)s'
-_LOGGING_FORMAT_DEBUG = '[%(levelname)s] %(module)s.%(funcName)s: %(message)s'
+_DEBUG = '-d' in sys.argv[1:] or '--debug' in sys.argv[1:]
 
+_LOGGING_FORMAT = '%(message)s'
+_LOGGING_FORMAT_DEBUG = '[%(levelname)s] %(module)s.%(funcName)s: %(message)s'\
 
 _ROOT_PKG_CACHE = '/var/cache/pacman/pkg/'
 
@@ -69,9 +70,12 @@ class Client:
         self.update()
 
     def __str__(self):
-        return '{{addr = {}; port = {}; id = {}}}'.format(
-            self.addr, self.port, self.id
-        )
+        if _DEBUG:
+            return '{{ip = {}; port = {}; id = {}}}'.format(
+                self.ip, self.port, self.id
+            )
+        else:
+            return '{{ip = {}; port = {}}}'.format(self.ip, self.port)
 
     def update(self):
         self.last = time.time()
@@ -101,7 +105,7 @@ class MulticastClientManager(DatagramProtocol):
                 _CLIENTS[_id].update()
             except KeyError:
                 c = Client(_id, addr)
-                logging.info('Client %s just connected!', c)
+                logging.info('Client %s connected!', c)
                 _CLIENTS[_id] = c
                 if _msg == _PING_MSG:
                     self.send_data(_PONG_MSG, addr)
@@ -146,17 +150,16 @@ class MulticastClientManager(DatagramProtocol):
         return len(_CLIENTS)
 
     def has_file(self, client, filename):
-        logging.info('Client %s asks if I have %s.', client, filename)
         packages = []
         for _, _, files in os.walk(_ROOT_PKG_CACHE):
             for _filename in files:
                 if _filename.endswith('.tar.xz'):
                     packages.append(_filename)
         if filename in packages:
-            logging.info('I have it!')
+            logging.info('%s: %s ? YES', client, filename)
             self.send_with_filename(_YES_MSG, filename, client.addr)
         else:
-            logging.info('It is not in my cache...')
+            logging.info('%s: %s ? NO', client, filename)
             self.send_with_filename(_NO_MSG, filename, client.addr)
 
 _MULTICAST_OBJ = MulticastClientManager()
@@ -181,8 +184,7 @@ class Request:
         if _REQUEST is None or _REQUEST.filename != self.filename:
             return
         client = _CLIENTS[id]
-        logging.info('Redirecting to client %s for packet %s.', client,
-                     self.filename)
+        logging.info('%s: Redirecting to client %s', self.filename, client)
         url = string.Template(_FILE_SERVER).safe_substitute({
             'ip': client.ip, 'port': client.port, 'filename': self.filename,
         })
@@ -198,11 +200,11 @@ class Request:
         if _FALLBACK_MIRROR.startswith('None'):
             # No fallback mirror is set in configuration, so we just return an
             # error.
-            logging.info('No fallback mirror: 404 Not Found.')
+            logging.info('%s: No fallback mirror: 404 Not Found.', self.filename)
             self.request.setResponseCode(404)
             self.request.finish()
         else:
-            logging.info('Redirecting to fallback mirror.')
+            logging.info('%s: Redirecting to fallback mirror.', self.filename)
             url = string.Template(_FALLBACK_MIRROR).safe_substitute({
                 'repo': self.repo, 'arch': self.arch, 'filename': self.filename,
             })
@@ -239,8 +241,7 @@ def timeout_clients():
     reactor.callLater(_REANNOUNCE_TIMER, timeout_clients)
 
 def main():
-    args = sys.argv[1:]
-    if '-d' in args or '--debug' in args:
+    if _DEBUG:
         logging.basicConfig(level=logging.DEBUG, format=_LOGGING_FORMAT_DEBUG)
     else:
         logging.basicConfig(level=logging.INFO, format=_LOGGING_FORMAT)
