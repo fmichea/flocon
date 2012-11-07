@@ -119,10 +119,6 @@ class MulticastClientManager(DatagramProtocol):
                 if _msg == _PING_MSG:
                     self.send_data(_PONG_MSG, addr)
             return
-        elif _msg == _DISCONNECT_MSG:
-            client.connected = False
-            timeout_clients()
-            return
 
         # From here, if we don't know the client, we just ignore the message.
         try:
@@ -130,6 +126,13 @@ class MulticastClientManager(DatagramProtocol):
         except KeyError:
             logging.error('I don\'t know this client!')
             return
+
+        if _msg == _DISCONNECT_MSG:
+            client.connected = False
+            timeout_clients()
+            return
+
+        # File message.
         try:
             _msg, _filename = _msg.split(_SEPARATOR_F)
         except KeyError:
