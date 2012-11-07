@@ -4,3 +4,6 @@ After=systemd-user-sessions.service
 
 [Service]
 ExecStart=/usr/bin/flocon
+
+[Install]
+WantedBy=multi-user.target
