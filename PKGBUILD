@@ -1,9 +1,9 @@
 # Maintainer: Franck Michea <franck.michea@gmail.com>
 # Maintainer: Yannick LM <yannicklm1337@gmail.com>
 pkgname=flocon-git
-pkgver=20121107
+pkgver=20121112
 pkgrel=1
-pkgdesc=""
+pkgdesc="Archlinux packages shared on local network"
 arch=('any')
 url="http://bitbucket.org/kushou/flocon"
 license=('BSD')
