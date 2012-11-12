@@ -14,6 +14,7 @@ import time
 
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
+from twisted.internet.error import MulticastJoinError
 from twisted.web import resource, server, static
 
 _DEBUG = '-d' in sys.argv[1:] or '--debug' in sys.argv[1:]
@@ -23,9 +24,10 @@ _LOGGING_FORMAT_DEBUG = '[%(levelname)s] %(module)s.%(funcName)s: %(message)s'\
 
 _ROOT_PKG_CACHE = '/var/cache/pacman/pkg/'
 
-_WAITING_TIMER = 1
 _REANNOUNCE_TIMER = 60 * 3
 _TIMEOUT = 1.5 * _REANNOUNCE_TIMER
+_TIMEOUT_JOINERROR = 180
+_WAITING_TIMER = 1
 
 _MULTICAST_GROUP = '228.0.2.35'
 _MULTICAST_PORT = 19432
@@ -96,9 +98,30 @@ class Client:
 _REQUEST = None
 
 class MulticastClientManager(DatagramProtocol):
-    def startProtocol(self):
-        self.transport.joinGroup(_MULTICAST_GROUP)
-        self.announce_presence()
+    def __init__(self, *args, **kwargs):
+        try:
+            DatagramProtocol.__init__(self, *args, **kwargs)
+        except AttributeError:
+            pass
+        self.__attempts = _TIMEOUT_JOINERROR
+
+    def startProtocol(self, signum=None, stack_frame=None):
+        def multicastError(_):
+            self.__attempts -= 1
+            if self.__attempts == 0:
+                logging.info('Impossible to connect to network. Send me '
+                             'SIGUSR2 when you have some network available.')
+                signal.signal(signal.SIGUSR2, self.startProtocol)
+                self.__attempts = _TIMEOUT_JOINERROR
+            else:
+                logging.debug('Multicast join failed!')
+                reactor.callLater(5, self.startProtocol)
+        def mutlicastJoined(_):
+            self.announce_presence()
+        joiner = self.transport.joinGroup(_MULTICAST_GROUP)
+        joiner.addCallback(mutlicastJoined)
+        joiner.addErrback(multicastError)
+        return joiner
 
     def datagramReceived(self, datagram, addr):
         logging.debug('Received a new UDP message from %r', addr)
