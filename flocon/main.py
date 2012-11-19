@@ -9,6 +9,7 @@ import random
 import signal
 import socket
 import string
+import subprocess
 import sys
 import time
 
@@ -17,7 +18,11 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.error import MulticastJoinError
 from twisted.web import resource, server, static
 
-_DEBUG = '-d' in sys.argv[1:] or '--debug' in sys.argv[1:]
+def has_option(short, long):
+    return short in sys.argv[1:] or long in sys.argv[1:]
+
+_DEBUG = has_option('-d', '--debug')
+_IP = has_option('-i', '--ip')
 
 _LOGGING_FORMAT = '%(message)s'
 _LOGGING_FORMAT_DEBUG = '[%(levelname)s] %(module)s.%(funcName)s: %(message)s'\
@@ -58,7 +63,7 @@ def _list_clients(signum, stack_frame):
     logging.info('\nThere %s %s client%s connected.',
                  'are' if c_len > 1 else 'is', c_len, 's' if c_len > 1 else '')
     for client in _CLIENTS.values():
-        logging.info(' - %s', client)
+        logging.info(' - %s', client.display())
     logging.info('')
 
 def _find_fallback_mirror():
@@ -78,22 +83,39 @@ _FILE_SERVER = 'http://$ip:$port/$filename'
 class Client:
     def __init__(self, id, addr):
         self.id, self.last, self.addr, self.connected = id, None, addr, True
-        self.ip, self.port = addr
+        self.ip, self.port, self.host = addr[0], addr[1], None
+        self.find_host()
         self.update()
 
     def __str__(self):
-        if _DEBUG:
-            return '{{ip = {}; port = {}; id = {}}}'.format(
-                self.ip, self.port, self.id
+        return self.display(display=False)
+
+    def display(self, display=True):
+        if _DEBUG or display:
+            return '{{id = {}; host = {}; ip = {}; port = {}}}'.format(
+                self.id, '[unknown]' if self.host is None else self.host,
+                self.ip, self.port,
             )
-        else:
+        elif _IP or self.host is None:
             return '{{ip = {}; port = {}}}'.format(self.ip, self.port)
+        else:
+            return '{{host = {}; port = {}}}'.format(self.host, self.port)
 
     def update(self):
         self.last = time.time()
 
     def is_valid(self):
         return self.connected and (time.time() - self.last) < _TIMEOUT
+
+    def find_host(self):
+        kwargs = {'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}
+        try:
+            p = subprocess.Popen(['host', self.ip], **kwargs)
+        except OSError:
+            return
+        out, _ = p.communicate()
+        if p.returncode == 0:
+            self.host = out.split()[-1][:-1]
 
 _REQUEST = None
 
