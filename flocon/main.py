@@ -118,6 +118,8 @@ class MulticastClientManager(DatagramProtocol):
                 reactor.callLater(5, self.startProtocol)
         def mutlicastJoined(_):
             self.announce_presence()
+        if signum is not None:
+            signal.signal(signal.SIGUSR2, signal.SIG_IGN)
         joiner = self.transport.joinGroup(_MULTICAST_GROUP)
         joiner.addCallback(mutlicastJoined)
         joiner.addErrback(multicastError)
@@ -300,6 +302,7 @@ def main():
 
     # Hook on SIGUSR1
     signal.signal(signal.SIGUSR1, _list_clients)
+    signal.signal(signal.SIGUSR2, signal.SIG_IGN)
 
     # Displaying some information about us.
     logging.info('Id: %s', _ID)
