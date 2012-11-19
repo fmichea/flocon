@@ -1,7 +1,7 @@
 # Maintainer: Franck Michea <franck.michea@gmail.com>
 # Maintainer: Yannick LM <yannicklm1337@gmail.com>
 pkgname=flocon-git
-pkgver=20121112
+pkgver=20121119
 pkgrel=1
 pkgdesc="Archlinux packages shared on local network"
 arch=('any')
