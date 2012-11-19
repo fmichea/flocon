@@ -23,6 +23,7 @@ def has_option(short, long):
 
 _DEBUG = has_option('-d', '--debug')
 _IP = has_option('-i', '--ip')
+_QUIET = has_option('-q', '--quiet')
 
 _LOGGING_FORMAT = '%(message)s'
 _LOGGING_FORMAT_DEBUG = '[%(levelname)s] %(module)s.%(funcName)s: %(message)s'\
@@ -319,6 +320,8 @@ def disconnect_multicast():
 def main():
     if _DEBUG:
         logging.basicConfig(level=logging.DEBUG, format=_LOGGING_FORMAT_DEBUG)
+    elif _QUIET:
+        logging.basicConfig(level=logging.CRITICAL)
     else:
         logging.basicConfig(level=logging.INFO, format=_LOGGING_FORMAT)
 
