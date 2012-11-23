@@ -1,7 +1,7 @@
 # Maintainer: Franck Michea <franck.michea@gmail.com>
 # Maintainer: Yannick LM <yannicklm1337@gmail.com>
 pkgname=flocon-git
-pkgver=20121119
+pkgver=20121124
 pkgrel=1
 pkgdesc="Archlinux packages shared on local network"
 arch=('any')
@@ -9,7 +9,7 @@ url="http://bitbucket.org/kushou/flocon"
 license=('BSD')
 groups=()
 depends=('python2' 'twisted')
-makedepends=()
+makedepends=('git')
 optdepends=()
 provides=()
 conflicts=()
